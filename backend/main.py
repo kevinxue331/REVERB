@@ -1,6 +1,6 @@
 from Fingerprint import Fingerprint
 from FingerprintComparator import FingerprintComparator
-from utils import formatSeconds
+from utils import processVideo
 
 # TEST CASES
 
