@@ -7,8 +7,8 @@ class FingerprintComparator:
 
     def __init__(self, fps1, fps2):
         """
-        fps1 (array): array of 32 bit integers representing the fingerprints of the first audio file
-        fps2 (array): array of 32 bit integers representing the fingerprints of the first second file
+        fps1 (array): array of 32 bit integers representing the fingerprints of longer audio file
+        fps2 (array): array of 32 bit integers representing the fingerprints of the shorter audiofile
         MIN_OVERLAP (int): minimum overlap between two fingerprints to compare
         STEP (int): step size across span to check correlation
         span (int): span of the offsets to check correlation at
@@ -19,10 +19,6 @@ class FingerprintComparator:
         self.span = min(len(self.fps1.fingerprints), len(self.fps2.fingerprints)) - self.MIN_OVERLAP
 
     def correlate(self, list1=None, list2=None):
-        if (list1 == None and list2 == None):
-            list1 = self.fps1.fingerprints
-            list2 = self.fps2.fingerprints
-
         """
         Correlates two audio files by comparing their fingerprints and returns similarity
         
@@ -34,9 +30,13 @@ class FingerprintComparator:
             float: correlation of two files -> Max value is 1.0, Min value is 0.0
             note: realistically no two audio files will have a correlation of 1.0 or 0.0, anything above a 0.55 is a decent match
 
-        To Do:
-            Merge with offsetCorrelate
-        """
+        Might be better to merge with offsetCorrelate()
+        """        
+        
+        if (list1 == None and list2 == None):
+            list1 = self.fps1.fingerprints
+            list2 = self.fps2.fingerprints
+
         variance = 0.0 # the number of bits that are the same, lowkey a confusing name can rename later
         for fp1, fp2 in zip(list1, list2): # zip uses smaller fingerprint
             variance += 32-bin((fp1^fp2)).count('1')
@@ -91,17 +91,18 @@ class FingerprintComparator:
             crossCor.append(self.offsetCorrelate(offset))
         return crossCor
      
-    def offsetToSeconds(self, crossCor):
+    def getBestOffset(self, crossCor):
+        """
+        Returns the index of the best offset from a list of coffsets
+        
+        Parameters:
+            crossCor (array): list of correlations at each offset
+            
+        Returns:
+            int: index of best offset
+        """
         maxCor = max(crossCor)
         maxIndex = crossCor.index(maxCor)
-        offset = -self.span + maxIndex * self.STEP
-
-        return seconds(offset)
+        return -self.span + maxIndex * self.STEP
     
-    def displayTimestamp(self, offsetSeconds):
-        if (offsetSeconds > 0):
-            return f"{self.fps2.name} occurs at {formatSeconds(offsetSeconds)} in {self.fps1.name}"
-        elif (offsetSeconds < 0):
-            return f"{self.fps1.name} occurs at {formatSeconds(-offsetSeconds)} before {self.fps2.name}"
-        else:
-            return "The two files are aligned"
+

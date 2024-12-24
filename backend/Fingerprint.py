@@ -1,9 +1,10 @@
 import subprocess
-from AudioFile import AudioFile
+from pathlib import Path
 
-class Fingerprint(AudioFile):
+class Fingerprint:
     def __init__(self, filePath, length=30):
-        super().__init__(filePath)
+        self.filePath = filePath
+        self.name = Path(filePath).name
         self.length = length
         self.fingerprints = self.__generateFingerprints(self.filePath, self.length)
     

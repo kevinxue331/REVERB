@@ -1,7 +1,6 @@
 import subprocess
 import json
 from pathlib import Path
-from AudioFile import AudioFile
 
 def offsets(seconds):
     return round(seconds*7.0)
@@ -22,7 +21,7 @@ def formatSeconds(seconds):
 #might be better to make a video class i'm not sure
 def processVideo(filePath):
     audioPath = filePath.replace(".mp4", ".wav")
-    name = Path(audioPath).name.replace(".wav", ".json")
+    
     try:
         subprocess.run(['ffmpeg', '-i', filePath, '-vn', audioPath,]) # split
     except:
@@ -48,3 +47,11 @@ def processVideo(filePath):
     except json.JSONDecodeError as e:
         print(f"Error parsing JSON: {e}")
         return None
+
+def displayTimestamp(fps1, fps2, offsetSeconds):
+    if (offsetSeconds > 0):
+        return f"{fps2.name} occurs at {formatSeconds(offsetSeconds)} in {fps1.name}"
+    elif (offsetSeconds < 0):
+        return f"{fps1.name} occurs at {formatSeconds(-offsetSeconds)} in {fps2.name}"
+    else:
+        return "The two files are aligned"
