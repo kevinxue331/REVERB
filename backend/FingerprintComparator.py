@@ -13,10 +13,14 @@ class FingerprintComparator:
         STEP (int): step size across span to check correlation
         span (int): span of the offsets to check correlation at
         """
-
-        self.fps1 = max(fps1, fps2, key=lambda x: len(x.fingerprints)) # longer fingerprint
-        self.fps2 = min(fps1, fps2, key=lambda x: len(x.fingerprints)) # shorter fingerprint
-        self.span = min(len(self.fps1.fingerprints), len(self.fps2.fingerprints)) - self.MIN_OVERLAP
+        
+        if (len(fps1) > len(fps2)):
+            self.fps1 = fps1  # longer fingerprint
+            self.fps2 = fps2 # shorter fingerprint
+        else:
+            self.fps2 = fps1
+            self.fps1 = fps2
+        self.span = len(self.fps2) - self.MIN_OVERLAP
 
     def correlate(self, list1=None, list2=None):
         """
@@ -34,8 +38,8 @@ class FingerprintComparator:
         """        
         
         if (list1 == None and list2 == None):
-            list1 = self.fps1.fingerprints
-            list2 = self.fps2.fingerprints
+            list1 = self.fps1
+            list2 = self.fps2
 
         variance = 0.0 # the number of bits that are the same, lowkey a confusing name can rename later
         for fp1, fp2 in zip(list1, list2): # zip uses smaller fingerprint
@@ -57,17 +61,22 @@ class FingerprintComparator:
         note: same return as correlate()
         """
         # offsetting y in front or behind of x and truncating so same size
-        overlapFps1 = self.fps1.fingerprints
-        overlapFps2 = self.fps2.fingerprints
-
+        overlapFps1 = self.fps1
+        overlapFps2 = self.fps2
+         
+        
         if (offset > 0):
-            overlapFps1 = self.fps1.fingerprints[offset:] # 2-10 (example offset of 2, y is 2 ahead of x)
-            overlapFps2 = self.fps2.fingerprints[:len(self.fps1.fingerprints)] # 0-8
+            overlapFps1 = self.fps1[offset:] # 2-10 (example offset of 2, y is 2 ahead of x)
+            overlapFps2 = self.fps2[:len(self.fps1)] # 0-8
         elif (offset < 0):
             offset = -offset
-            overlapFps2 = self.fps2.fingerprints[offset:] # 2-10 (example offset of -2, y is 2 behind of x (or x is 2 ahead of y))
-            overlapFps1 = self.fps1.fingerprints[:len(self.fps2.fingerprints)] # 0-8
+            overlapFps2 = self.fps2[offset:] # 2-10 (example offset of -2, y is 2 behind of x (or x is 2 ahead of y))
+            overlapFps1 = self.fps1[:len(self.fps2)] # 0-8
+            
         if (min(len(overlapFps1), len(overlapFps2)) < self.MIN_OVERLAP):
+            print (f"Overlap is {min(len(overlapFps1), len(overlapFps2))} for offset {offset}")
+            print(len(self.fps1))
+            print(len(self.fps2))
             raise Exception("Not enough overlap between two fingerprints to compare")
         return self.correlate(overlapFps1, overlapFps2)
 
@@ -83,10 +92,10 @@ class FingerprintComparator:
         """
 
         # TO DO - use stats to reduce false positives
-        if (self.span > min(len(self.fps1.fingerprints), len(self.fps2.fingerprints))):
-            raise Exception(f"Span is greater than the length of the shorter fingerprint. Shortest fingerprint is {min(len(self.fps1.fingerprints), len(self.fps2.fingerprints))}")
+        if (self.span > min(len(self.fps1), len(self.fps2))):
+            raise Exception(f"Span is greater than the length of the shorter fingerprint. Shortest fingerprint is {min(len(self.fps1), len(self.fps2))}")
         crossCor = []
-        upper = max(len(self.fps1.fingerprints), len(self.fps2.fingerprints))-self.MIN_OVERLAP
+        upper = max(len(self.fps1), len(self.fps2))-self.MIN_OVERLAP
         for offset in  numpy.arange(-self.span, upper, self.STEP):
             crossCor.append(self.offsetCorrelate(offset))
         return crossCor

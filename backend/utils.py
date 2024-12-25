@@ -1,5 +1,3 @@
-import subprocess
-import json
 from pathlib import Path
 
 def offsets(seconds):
@@ -18,7 +16,11 @@ def formatSeconds(seconds):
 
     return f"{minutes:02}:{seconds:02}.{milliseconds:03}"
 
-def displayTimestamp(fps1, fps2, offsetSeconds):
+def displayTimestamp(list1, list2, offsetSeconds):
+    
+    fps1 = max(list1, list2, key=lambda x: len(x.fingerprints))
+    fps2 = min(list1, list2, key=lambda x: len(x.fingerprints))
+    
     if (offsetSeconds > 0):
         return f"{fps2.name} occurs at {formatSeconds(offsetSeconds)} in {fps1.name}"
     elif (offsetSeconds < 0):
