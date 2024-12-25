@@ -1,22 +1,23 @@
 from Fingerprint import Fingerprint
 from FingerprintComparator import FingerprintComparator
+from Video import Video
 from utils import displayTimestamp, seconds
 
-# TEST CASES
+clarity1full = Video("C:/Users/ethan/OneDrive/Desktop/Programming/temp/clarity1full.mp4")
+clarity2 = Video("C:/Users/ethan/OneDrive/Desktop/Programming/temp/clarity2.mp4")
+v9291 = Video("C:/Users/ethan/OneDrive/Desktop/Programming/temp/IMG_9291.MP4")
 
-clarity1 = Fingerprint("./media/clarity1.wav")
-clarity2 = Fingerprint("./media/clarity2.wav")
-clarity1trim = Fingerprint("./media/clarity1trim.wav")
-clarity2trim = Fingerprint("./media/clarity2trim.wav")
-stay = Fingerprint("./media/stay.wav")
-lebron = Fingerprint("./media/lebron.wav")
-clarity1full = Fingerprint("./media/clarity1full.wav", 407)
 
-# Create FingerprintComparator Instances for Cross Correlation and Comparisons
-comparator_clarity_full = FingerprintComparator(clarity2, clarity1full)
+fp1 = Fingerprint(clarity1full.getAudioPath(), clarity1full.duration)
+fp2 = Fingerprint(clarity2.getAudioPath(), clarity2.duration)
 
-cross_correlation = comparator_clarity_full.crossCorrelate()
-max_correlation = max(cross_correlation)
-offsetSeconds = seconds(comparator_clarity_full.getBestOffset(cross_correlation))
-print(f"Max Correlation (clarity1full vs clarity2): {max_correlation}")
-print(displayTimestamp(clarity2, clarity1full, offsetSeconds))
+
+
+# clarity1full.extractAudio()
+# clarity2.extractAudio()
+
+comparator = FingerprintComparator(fp1.fingerprints, fp2.fingerprints)
+
+crossCor = comparator.crossCorrelate()
+offsetSeconds = seconds(comparator.getBestOffset(crossCor))
+print(displayTimestamp(fp2, fp1, offsetSeconds))
