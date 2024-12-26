@@ -1,181 +1,224 @@
-"use client";
-import { cn } from "../utils/cn";
-import { useEffect, useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from 'react';
+import {
+  View,
+  StyleSheet,
+  PanResponder,
+  Animated,
+  Dimensions,
+  Platform,
+} from 'react-native';
+import Svg, { Defs, RadialGradient, Rect, Stop, Circle } from 'react-native-svg';
 
-export const BackgroundGradientAnimation = ({
-  gradientBackgroundStart = "rgb(108, 0, 162)",
-  gradientBackgroundEnd = "rgb(0, 17, 82)",
-  firstColor = "2000, 213, 255",
-  secondColor = "221, 174, 255",
-  thirdColor = "100, 220, 255",
-  fourthColor = "200, 150, 250",
-  fifthColor = "180, 180, 150",
-  pointerColor = "250, 250, 255",
-  size = "80%",
-  blendingValue = "hard-light",
-  children,
-  className,
-  interactive = true,
-  containerClassName,
-}: {
+const { width, height } = Dimensions.get('window');
+
+type BackgroundGradientAnimationProps = {
   gradientBackgroundStart?: string;
   gradientBackgroundEnd?: string;
-  firstColor?: string;
+  firstColor?: string;   // "R,G,B" without the "rgba()" or "rgb()"
   secondColor?: string;
   thirdColor?: string;
   fourthColor?: string;
   fifthColor?: string;
   pointerColor?: string;
-  size?: string;
-  blendingValue?: string;
-  children?: React.ReactNode;
-  className?: string;
+  size?: number;         // e.g. 0.8 for 80% (we can interpret)
+  blendingValue?: string; // Not used in RN; can't replicate mix-blend-mode
   interactive?: boolean;
-  containerClassName?: string;
+  children?: React.ReactNode;
+};
+
+/**
+ * A simplified React Native version of the web-based
+ * background gradients animation. This uses react-native-svg
+ * to render radial gradients, plus an optional animated “pointer” circle.
+ *
+ * Note: Many browser-only features (mix-blend-mode, SVG filters) are not
+ * natively available in RN. This is a starting point, not a drop-in replacement.
+ */
+export const BackgroundGradientAnimation: React.FC<
+  BackgroundGradientAnimationProps
+> = ({
+  gradientBackgroundStart = '#6C00A2',
+  gradientBackgroundEnd = '#001152',
+  firstColor = '200,213,255',
+  secondColor = '221,174,255',
+  thirdColor = '100,220,255',
+  fourthColor = '200,150,250',
+  fifthColor = '180,180,150',
+  pointerColor = '250,250,255',
+  size = 0.8, // interpret as 80% of screen
+  blendingValue = 'hard-light', // can't replicate in RN
+  interactive = true,
+  children,
 }) => {
-  const interactiveRef = useRef<HTMLDivElement>(null);
+  // Convert “R,G,B” to something like rgba(R,G,B, alpha)
+  const toRgba = (rgb: string, alpha: number) => `rgba(${rgb},${alpha})`;
 
-  const [curX, setCurX] = useState(0);
-  const [curY, setCurY] = useState(0);
-  const [tgX, setTgX] = useState(0);
-  const [tgY, setTgY] = useState(0);
-  useEffect(() => {
-    document.body.style.setProperty(
-      "--gradient-background-start",
-      gradientBackgroundStart
-    );
-    document.body.style.setProperty(
-      "--gradient-background-end",
-      gradientBackgroundEnd
-    );
-    document.body.style.setProperty("--first-color", firstColor);
-    document.body.style.setProperty("--second-color", secondColor);
-    document.body.style.setProperty("--third-color", thirdColor);
-    document.body.style.setProperty("--fourth-color", fourthColor);
-    document.body.style.setProperty("--fifth-color", fifthColor);
-    document.body.style.setProperty("--pointer-color", pointerColor);
-    document.body.style.setProperty("--size", size);
-    document.body.style.setProperty("--blending-value", blendingValue);
-  }, []);
+  // Center positions
+  const centerX = width / 2;
+  const centerY = height / 2;
 
-  useEffect(() => {
-    function move() {
-      if (!interactiveRef.current) {
-        return;
-      }
-      setCurX(curX + (tgX - curX) / 20);
-      setCurY(curY + (tgY - curY) / 20);
-      interactiveRef.current.style.transform = `translate(${Math.round(
-        curX
-      )}px, ${Math.round(curY)}px)`;
-    }
+  // We'll store the "pointer" position in an Animated.ValueXY
+  const pointerPos = useRef(new Animated.ValueXY({ x: centerX, y: centerY })).current;
 
-    move();
-  }, [tgX, tgY]);
+  // PanResponder for interactive pointer
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => interactive,
+      onMoveShouldSetPanResponder: () => interactive,
+      onPanResponderMove: (evt, gestureState) => {
+        // We can animate pointer to the current touch
+        Animated.spring(pointerPos, {
+          toValue: { x: gestureState.moveX, y: gestureState.moveY },
+          useNativeDriver: false,
+        }).start();
+      },
+      onPanResponderRelease: () => {},
+    })
+  ).current;
 
-  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (interactiveRef.current) {
-      const rect = interactiveRef.current.getBoundingClientRect();
-      setTgX(event.clientX - rect.left);
-      setTgY(event.clientY - rect.top);
-    }
-  };
+  // If we want a subtle "float" effect similar to your web code, you can do
+  // an interpolation in an animation loop. 
+  // For brevity, we’ll do direct spring updates from the PanResponder.
 
-  const [isSafari, setIsSafari] = useState(false);
-  useEffect(() => {
-    setIsSafari(/^((?!chrome|android).)*safari/i.test(navigator.userAgent));
-  }, []);
+  const circleSize = Math.min(width, height) * size;
 
   return (
-    <div
-      className={cn(
-        "h-screen w-screen relative overflow-hidden top-0 left-0 bg-[linear-gradient(40deg,var(--gradient-background-start),var(--gradient-background-end))]",
-        containerClassName
-      )}
-    >
-      <svg className="hidden">
-        <defs>
-          <filter id="blurMe">
-            <feGaussianBlur
-              in="SourceGraphic"
-              stdDeviation="10"
-              result="blur"
-            />
-            <feColorMatrix
-              in="blur"
-              mode="matrix"
-              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8"
-              result="goo"
-            />
-            <feBlend in="SourceGraphic" in2="goo" />
-          </filter>
-        </defs>
-      </svg>
-      <div className={cn("", className)}>{children}</div>
-      <div
-        className={cn(
-          "gradients-container h-full w-full blur-lg",
-          isSafari ? "blur-2xl" : "[filter:url(#blurMe)_blur(40px)]"
-        )}
-      >
-        <div
-          className={cn(
-            `absolute [background:radial-gradient(circle_at_center,_var(--first-color)_0,_var(--first-color)_50%)_no-repeat]`,
-            `[mix-blend-mode:var(--blending-value)] w-[var(--size)] h-[var(--size)] top-[calc(50%-var(--size)/2)] left-[calc(50%-var(--size)/2)]`,
-            `[transform-origin:center_center]`,
-            `animate-first`,
-            `opacity-100`
-          )}
-        ></div>
-        <div
-          className={cn(
-            `absolute [background:radial-gradient(circle_at_center,_rgba(var(--second-color),_0.8)_0,_rgba(var(--second-color),_0)_50%)_no-repeat]`,
-            `[mix-blend-mode:var(--blending-value)] w-[var(--size)] h-[var(--size)] top-[calc(50%-var(--size)/2)] left-[calc(50%-var(--size)/2)]`,
-            `[transform-origin:calc(50%-400px)]`,
-            `animate-second`,
-            `opacity-100`
-          )}
-        ></div>
-        <div
-          className={cn(
-            `absolute [background:radial-gradient(circle_at_center,_rgba(var(--third-color),_0.8)_0,_rgba(var(--third-color),_0)_50%)_no-repeat]`,
-            `[mix-blend-mode:var(--blending-value)] w-[var(--size)] h-[var(--size)] top-[calc(50%-var(--size)/2)] left-[calc(50%-var(--size)/2)]`,
-            `[transform-origin:calc(50%+400px)]`,
-            `animate-third`,
-            `opacity-100`
-          )}
-        ></div>
-        <div
-          className={cn(
-            `absolute [background:radial-gradient(circle_at_center,_rgba(var(--fourth-color),_0.8)_0,_rgba(var(--fourth-color),_0)_50%)_no-repeat]`,
-            `[mix-blend-mode:var(--blending-value)] w-[var(--size)] h-[var(--size)] top-[calc(50%-var(--size)/2)] left-[calc(50%-var(--size)/2)]`,
-            `[transform-origin:calc(50%-200px)]`,
-            `animate-fourth`,
-            `opacity-70`
-          )}
-        ></div>
-        <div
-          className={cn(
-            `absolute [background:radial-gradient(circle_at_center,_rgba(var(--fifth-color),_0.8)_0,_rgba(var(--fifth-color),_0)_50%)_no-repeat]`,
-            `[mix-blend-mode:var(--blending-value)] w-[var(--size)] h-[var(--size)] top-[calc(50%-var(--size)/2)] left-[calc(50%-var(--size)/2)]`,
-            `[transform-origin:calc(50%-800px)_calc(50%+800px)]`,
-            `animate-fifth`,
-            `opacity-100`
-          )}
-        ></div>
+    <View style={[styles.container]}>
+      {/* 
+        We’ll create a background with two big Rects or linear gradients, 
+        because a real vertical or diagonal gradient is simpler with 
+        react-native-linear-gradient. For demonstration, let's just use a 
+        plain background color. 
+      */}
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            backgroundColor: gradientBackgroundStart,
+          },
+        ]}
+      />
 
-        {interactive && (
-          <div
-            ref={interactiveRef}
-            onMouseMove={handleMouseMove}
-            className={cn(
-              `absolute [background:radial-gradient(circle_at_center,_rgba(var(--pointer-color),_0.8)_0,_rgba(var(--pointer-color),_0)_50%)_no-repeat]`,
-              `[mix-blend-mode:var(--blending-value)] w-full h-full -top-1/2 -left-1/2`,
-              `opacity-70`
-            )}
-          ></div>
-        )}
-      </div>
-    </div>
+      {/* 
+        Now let's place multiple radial gradients using <Svg />. 
+        Each <Circle> with a <RadialGradient> can mimic one "blob".
+      */}
+      <Svg
+        pointerEvents="none"
+        height={height}
+        width={width}
+        style={StyleSheet.absoluteFill}
+      >
+        <Defs>
+          {/* 
+            We define multiple radial gradients. 
+            Each has an id, used by one Circle. 
+            (Alpha set to ~0.8 at center, 0 at edges, to mimic your gradient fade-out)
+          */}
+          <RadialGradient id="grad1" cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor={toRgba(firstColor, 0.8)} />
+            <Stop offset="1" stopColor={toRgba(firstColor, 0)} />
+          </RadialGradient>
+          <RadialGradient id="grad2" cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor={toRgba(secondColor, 0.8)} />
+            <Stop offset="1" stopColor={toRgba(secondColor, 0)} />
+          </RadialGradient>
+          <RadialGradient id="grad3" cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor={toRgba(thirdColor, 0.8)} />
+            <Stop offset="1" stopColor={toRgba(thirdColor, 0)} />
+          </RadialGradient>
+          <RadialGradient id="grad4" cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor={toRgba(fourthColor, 0.8)} />
+            <Stop offset="1" stopColor={toRgba(fourthColor, 0)} />
+          </RadialGradient>
+          <RadialGradient id="grad5" cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor={toRgba(fifthColor, 0.8)} />
+            <Stop offset="1" stopColor={toRgba(fifthColor, 0)} />
+          </RadialGradient>
+        </Defs>
+
+        {/* 
+          Each Circle below is “centered” in the screen with some offset, 
+          similar to your `top-[calc(50%-var(--size)/2)] left-[calc(50%-var(--size)/2)]`. 
+          We use `cx`, `cy`, and `r` to define the radial area. 
+        */}
+        <Circle
+          cx={centerX}
+          cy={centerY}
+          r={circleSize * 0.5}
+          fill="url(#grad1)"
+        />
+        <Circle
+          cx={centerX - 100}
+          cy={centerY - 200}
+          r={circleSize * 0.4}
+          fill="url(#grad2)"
+        />
+        <Circle
+          cx={centerX + 150}
+          cy={centerY + 50}
+          r={circleSize * 0.4}
+          fill="url(#grad3)"
+        />
+        <Circle
+          cx={centerX - 200}
+          cy={centerY + 150}
+          r={circleSize * 0.3}
+          fill="url(#grad4)"
+        />
+        <Circle
+          cx={centerX + 250}
+          cy={centerY - 100}
+          r={circleSize * 0.5}
+          fill="url(#grad5)"
+        />
+      </Svg>
+
+      {/* 
+        Interactive pointer “blob”. This is an Animated.View that we place 
+        where the user touches. We use a radial gradient with react-native-svg 
+        or simply a View with a background color. 
+        Below, we show a large Animated.View with a semi-transparent background.
+      */}
+      {interactive && (
+        <Animated.View
+          {...panResponder.panHandlers}
+          style={[
+            styles.pointer,
+            {
+              transform: [
+                { translateX: Animated.subtract(pointerPos.x, 100) }, // center the blob
+                { translateY: Animated.subtract(pointerPos.y, 100) },
+              ],
+              backgroundColor: toRgba(pointerColor, 0.4),
+            },
+          ]}
+        />
+      )}
+
+      {/* 
+        Place your children above everything if you want 
+        text or other components on top of the background 
+      */}
+      <View style={styles.contentContainer}>{children}</View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  pointer: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+  },
+  contentContainer: {
+    ...StyleSheet.absoluteFillObject,
+    // For demonstration, center children
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

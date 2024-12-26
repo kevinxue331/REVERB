@@ -1,21 +1,14 @@
-// App.js
-import { BackgroundGradientAnimation }from './src/components/background.jsx';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { BackgroundGradientAnimation } from './src/components/background.jsx';
+import tailwind from 'tailwind-rn';
 
 export default function App() {
   return (
-    <>
-       <BackgroundGradientAnimation />
-    </>
+    <BackgroundGradientAnimation>
+      <View style={tailwind('flex-1 justify-center items-center')}>
+        <Text style={tailwind('text-4xl text-white font-bold')}>REVERB</Text>
+      </View>
+    </BackgroundGradientAnimation>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-});
