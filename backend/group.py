@@ -29,12 +29,13 @@ from FingerprintComparator import FingerprintComparator
 #     "a8": [random.sample(range(1, 3), 2), "2"],
 # }
 
-ids = {}
-toAdd = {}
-
 # groups = {"1": ["a1", "a2"], "2": ["a3", "a4", "a8"], "3": ["a5"], "4": ["a6", "a7"]}
 # toAdd = {"a9":[1,2,3,4,1], "a10":[1,2,3], "a11":[1,2,3,4,5], "a12":[1,2], "a13":[1]}
 
+## for testing ^^^
+
+ids = {}
+toAdd = {}
 
 
 path = r"C:\Users\ethan\OneDrive\Desktop\Programming\temp"
@@ -60,9 +61,8 @@ for (audioFile, fingerprint) in toAdd.items():
         fc = FingerprintComparator(fingerprint, fingerprint2)
         print (audioFile, " ", audioFile2)
         print (len(fingerprint), " ", len(fingerprint2))
-        if (max(fc.crossCorrelate()) >= 0.7):
+        if (fc.getBestScore(fc.crossCorrelate()) >= 0.7):
             uf.union(audioFile, audioFile2)
     ids[audioFile] = fingerprint
-
 
 print(uf.components())
