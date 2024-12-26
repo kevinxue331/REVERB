@@ -123,14 +123,14 @@ class FingerprintComparator:
         
         # https://github.com/unmade/audiomatch/blob/master/src/audiomatch/fingerprints.py
         # useful methods for filtering out false positives
-        if (min(len(self.fps1), len(self.fps2)) > hashes(6)):
-            if min(len(self.fps1), len(self.fps2)) < hashes(20):
-                score *= 0.97
-            
-            sampleSpan = 5
-            samples = crossCor[scoreIndex - sampleSpan : scoreIndex] + crossCor[scoreIndex + 1 : scoreIndex + sampleSpan + 1]
-            if score-statistics.median(samples) > 0.04:
-                return score
+        # if (min(len(self.fps1), len(self.fps2)) > hashes(6)):
+        if min(len(self.fps1), len(self.fps2)) < hashes(20):
+            score *= 0.97
+        
+        sampleSpan = 5
+        samples = crossCor[scoreIndex - sampleSpan : scoreIndex] + crossCor[scoreIndex + 1 : scoreIndex + sampleSpan + 1]
+        if score-statistics.median(samples) > 0.04:
+            return score
         return 0.0
         
             
