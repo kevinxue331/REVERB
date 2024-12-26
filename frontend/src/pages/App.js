@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { BackgroundGradientAnimation } from './src/components/background.jsx';
+import { BackgroundGradientAnimation } from '../components/background.jsx';
 import tailwind from 'tailwind-rn';
 
 export default function App() {
