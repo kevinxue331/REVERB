@@ -1,9 +1,11 @@
 import numpy
-from utils import seconds, formatSeconds
+from utils import hashes
+import statistics
 
 class FingerprintComparator:
     MIN_OVERLAP = 20 # 7 offsets is 1 second
     STEP = 1  # checking every 0.14 seconds for correlation basically
+    SIMILARITY_THRESHOLD = 0.7
 
     def __init__(self, fps1, fps2):
         """
@@ -57,8 +59,8 @@ class FingerprintComparator:
             offset (int): offset to compare the two fingerprints at. Offsets fps2 the amount from fps1
 
         Returns:
-        float: correlation of two files -> Max value is 1.0, Min value is 0.0
-        note: same return as correlate()
+            float: correlation of two files -> Max value is 1.0, Min value is 0.0
+            note: same return as correlate()
         """
         # offsetting y in front or behind of x and truncating so same size
         overlapFps1 = self.fps1
@@ -102,16 +104,36 @@ class FingerprintComparator:
      
     def getBestOffset(self, crossCor):
         """
-        Returns the index of the best offset from a list of coffsets
+        Returns the best offset from a cross correlation array
         
         Parameters:
             crossCor (array): list of correlations at each offset
             
         Returns:
-            int: index of best offset
+            int: max corrleation offset
         """
         maxCor = max(crossCor)
         maxIndex = crossCor.index(maxCor)
         return -self.span + maxIndex * self.STEP
+    
+
+    def getBestScore(self, crossCor):
+        score = max(crossCor)
+        scoreIndex = crossCor.index(score)
+        
+        # https://github.com/unmade/audiomatch/blob/master/src/audiomatch/fingerprints.py
+        # useful methods for filtering out false positives
+        if (min(len(self.fps1), len(self.fps2)) > hashes(6)):
+            if min(len(self.fps1), len(self.fps2)) < hashes(20):
+                score *= 0.97
+            
+            sampleSpan = 5
+            samples = crossCor[scoreIndex - sampleSpan : scoreIndex] + crossCor[scoreIndex + 1 : scoreIndex + sampleSpan + 1]
+            if score-statistics.median(samples) > 0.04:
+                return score
+        return 0.0
+        
+            
+        
     
 

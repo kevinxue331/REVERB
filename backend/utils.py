@@ -1,9 +1,10 @@
 from pathlib import Path
 
-def offsets(seconds):
-    return round(seconds*7.0)
+def hashes(seconds):
+    hashesPerSecond = (4096.0 / 3) / 11025.0
+    return seconds/hashesPerSecond
 
-# no idea how well this works but looks good for the one tesst i did
+# no idea how well this works but looks good for the one test i did
 def seconds(hashes):
     # frame size from https://oxygene.sk/2011/01/how-does-chromaprint-work/
     hashesPerSecond = (4096.0 / 3) / 11025.0  # ~0.1238 seconds per fingerprint
